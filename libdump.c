@@ -10,7 +10,7 @@
 
 struct hierarchy_entry *prev = NULL;
 
-static struct hierarchy_entry *find_parent(struct hierarchy_entry_head *head, uint64_t x2)
+struct hierarchy_entry *find_parent(struct hierarchy_entry_head *head, uint64_t x2)
 {
     struct hierarchy_entry *p = NULL;
     SLIST_FOREACH(p, head, entries) {
@@ -20,39 +20,6 @@ static struct hierarchy_entry *find_parent(struct hierarchy_entry_head *head, ui
     }
     
     return NULL;
-}
-
-void rebuild_hierarchy(struct hierarchy_entry_head *head)
-{
-    if (SLIST_EMPTY(head))
-        return;
-    
-    struct hierarchy_entry *p = NULL;
-    SLIST_FOREACH(p, head, entries) {
-        
-        struct hierarchy_entry_head sub_head = SLIST_HEAD_INITIALIZER(sub_head);
-        
-        struct hierarchy_entry *curr = p;
-        while (curr != NULL) {
-            struct hierarchy_entry *k = malloc(sizeof(struct hierarchy_entry));
-            strncpy(k->class_name, curr->class_name, sizeof(curr->class_name));
-            k->set = curr->set;
-            SLIST_INSERT_HEAD(&sub_head, k, entries);
-            
-            curr = find_parent(head, curr->set.reg_x2);
-        }
-        printf("\n");
-        
-        struct hierarchy_entry *j = NULL;
-        SLIST_FOREACH(j, &sub_head, entries) {
-            printf("%s", j->class_name);
-            if (j->entries.sle_next) {
-                printf(" -> ");
-            }
-        }
-        
-        //printf("\n");
-    }
 }
 
 dmp_ctx_t *init_dump_ctx(macho_map_t *map)
@@ -100,7 +67,6 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
         for (j = 0; j < count; j++) {
             if (cs_regs_access(handle, &insn[j], regs_read, &read_count, regs_write, &write_count) == 0) {
                 switch (insn[j].id) {
-                        /* ADR: calculate offset, add to pc */
                     case ARM64_INS_ADR: {
                         
                         uint64_t adr_addr = 0;
@@ -115,7 +81,6 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         break;
                     }
                         
-                        /* ADRP: calculate offset, add to pc, zero out last 12 bits */
                     case ARM64_INS_ADRP: {
                         
                         uint64_t adr_addr = 0;
@@ -130,7 +95,6 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         break;
                     }
                         
-                        /* LDR: calculate offset, add to pc, deref that, write result in write reg */
                     case ARM64_INS_LDR: {
                         
                         uint64_t ldr_addr = 0;
@@ -156,7 +120,6 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         break;
                     }
                         
-                        /* ADD: take value in read reg, add to value in write reg, add immediate to value in write reg */
                     case ARM64_INS_ADD: {
 
                         uint32_t off = 0;
@@ -169,7 +132,6 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         break;
                     }
                         
-                        /* MOV: take value in read reg, set to value in write reg */
                     case ARM64_INS_MOV: {
                         
                         uint64_t op1 = get_ctx_reg_map_reg(ctx, regs_read[0]);
@@ -178,14 +140,13 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         break;
                     }
                         
-                    /* BL: not actually emulated, used as a breakpoint to load registers into the hierarchy list */
                     case ARM64_INS_BL: {
                         
                         int is_bl = 0;
                         int32_t off = 0;
                         if (aarch64_decode_b(*(uint32_t *)(&insn[j].bytes), &is_bl, &off)) {
                             if (insn[j].address + off == kimage_os_metaclass_constructor) {
-
+                                
                                 struct hierarchy_entry *entry = malloc(sizeof(struct hierarchy_entry));
                                 
                                 strncpy(entry->class_name, (char *)KERNEL_ADDR_TO_MAP(ctx->kimage_mh, kimage_base, get_ctx_reg_map_reg(ctx, REG_X1)), sizeof(entry->class_name));
@@ -204,20 +165,11 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                                     SLIST_INSERT_AFTER(prev, entry, entries);
                                     prev = entry;
                                 }
-                                
-#if 0
-                                printf("x0: %#llx\n", get_ctx_reg_map_reg(ctx, REG_X0));
-                                printf("x1: %#llx -> %s\n", get_ctx_reg_map_reg(ctx, REG_X1), (char *)KERNEL_ADDR_TO_MAP(ctx->kimage_mh, kimage_base, get_ctx_reg_map_reg(ctx, REG_X1)));
-                                printf("x2: %#llx\n", get_ctx_reg_map_reg(ctx, REG_X2));
-                                
-                                printf("\n");
-#endif
                             }
                         }
                         
                         break;
                     }
-                    
                 }
             }
         }

@@ -85,7 +85,7 @@ struct hierarchy_entry {
 SLIST_HEAD(hierarchy_entry_head, hierarchy_entry);
 
 /* hierarchy */
-void rebuild_hierarchy(struct hierarchy_entry_head *head);
+struct hierarchy_entry *find_parent(struct hierarchy_entry_head *head, uint64_t x2);
 
 /* emulation */
 dmp_ctx_t *init_dump_ctx(macho_map_t *map);
