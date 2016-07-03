@@ -23,6 +23,11 @@ Now, the arguments accepted by _iokit-dumper-arm64_:
 *   `-n`: it specifies the image to dump name. If not specified, all images will be dumped. Pass the string `kernel` to dump the kernel hierarchy. Pass a KEXT bundle name (Ex. `com.apple.iokit.IOHIDFamily`) to dump that KEXT hierarchy.
 *   `-c`: Auto convert. If specified, it automatically runs a dot command at the end of the dumping process to generate a PDF file containing the graph.
 
+Example usage to dump kernel hierarchy to Desktop:
+```
+./iokit-dumper-arm64 -f /path/to/kernelcache.dump -n kernel -o /Users/$USER/Desktop/ -c
+```
+
 ## libdump
 `libdump` is a kind-of AArch64 emulator. It is quite sloppy and relies on `capstone`. It has been written specifically for this project, but it could become a totally separated project in the future.
 
