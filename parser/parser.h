@@ -26,6 +26,8 @@
 #define INSN_NOP                    0xD503201F
 #define INSN_PROLOG_END             0xA8C17BFD
 
+char *read_line(FILE *fin);
+
 int aarch64_decode_adr (uint32_t insn, int *is_adrp, unsigned *rd, int32_t *offset);
 int aarch64_decode_ldr_literal (uint32_t insn, int *is_w, int *is64, unsigned *rt, int32_t *offset);
 int aarch64_decode_ldr_immediate(uint32_t insn, uint32_t *offset);
@@ -33,6 +35,8 @@ int aarch64_decode_add (uint32_t insn, uint32_t *offset);
 int aarch64_decode_b(uint32_t insn, int *is_bl, int32_t *offset);
 
 uint32_t get_constructor_size(struct mach_header_64 *mh, uint64_t constructor_kaddr, uint64_t kbase);
+
+const char *get_kext_name(macho_map_t *map, struct mach_header_64 *mh);
 
 uint64_t find_kimage_base(struct mach_header_64 *mh);
 uint64_t find_kimage_os_metaclass_constructor(struct mach_header_64 *mh, uint64_t kimage_base);

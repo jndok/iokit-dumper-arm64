@@ -6,6 +6,15 @@
 //  Copyright © 2016 jndok. All rights reserved.
 //
 
+/*  libdump v0.1
+ *
+ *  AArch64 kind-of emulator. This was designed specifically for
+ *  iokitdumper and emulates very few instructions. It relies on
+ *  capstone 'next' branch features, however it could be quite easily
+ *  redesigned to work wihout capstone.
+ *  Maybe one day it will become a project of its own, who knows?
+ */
+
 #ifndef libdump_h
 #define libdump_h
 
@@ -16,7 +25,7 @@
 #include <capstone/capstone.h>
 #include <machoman/machoman.h>
 
-#include "parser.h"
+#include "../parser/parser.h"
 
 #define REG_X0  199
 #define REG_X1  200
@@ -78,6 +87,7 @@ typedef struct hierarchy_regs_set {
 
 struct hierarchy_entry {
     SLIST_ENTRY(hierarchy_entry) entries;
+    char kext_name[256];
     char class_name[128];
     struct hierarchy_regs_set set;
 };

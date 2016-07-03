@@ -139,7 +139,8 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         
                         break;
                     }
-                        
+                     
+                    /* ugly. libdump should be independent of iokitdumper, but I was lazy and this was the quickest way to map constructors lmao */
                     case ARM64_INS_BL: {
                         
                         int is_bl = 0;
@@ -147,9 +148,20 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                         if (aarch64_decode_b(*(uint32_t *)(&insn[j].bytes), &is_bl, &off)) {
                             if (insn[j].address + off == kimage_os_metaclass_constructor) {
                                 
+                                const char *kext_name = get_kext_name(ctx->map, ctx->kimage_mh);
+                                
                                 struct hierarchy_entry *entry = malloc(sizeof(struct hierarchy_entry));
                                 
                                 strncpy(entry->class_name, (char *)KERNEL_ADDR_TO_MAP(ctx->kimage_mh, kimage_base, get_ctx_reg_map_reg(ctx, REG_X1)), sizeof(entry->class_name));
+                                if (kext_name)
+                                    strncpy(entry->kext_name, kext_name, sizeof(entry->kext_name));
+                                else {
+                                    if (((void *)ctx->map->map_data == (void *)ctx->kimage_mh)) {
+                                        strncpy(entry->kext_name, "kernel", sizeof(entry->kext_name));
+                                    } else {
+                                        strncpy(entry->kext_name, "unknown", sizeof(entry->kext_name));
+                                    }
+                                }
                                 
                                 struct hierarchy_regs_set set = {0};
                                 set.reg_x0 = get_ctx_reg_map_reg(ctx, REG_X0);
@@ -158,12 +170,16 @@ void emulate_constructor(dmp_ctx_t *ctx, uint64_t constructor_address, struct hi
                                 
                                 entry->set = set;
                                 
-                                if (SLIST_EMPTY(head)) {
-                                    SLIST_INSERT_HEAD(head, entry, entries);
-                                    prev = entry;
+                                if (head) {
+                                    if (SLIST_EMPTY(head)) {
+                                        SLIST_INSERT_HEAD(head, entry, entries);
+                                        prev = entry;
+                                    } else {
+                                        SLIST_INSERT_AFTER(prev, entry, entries);
+                                        prev = entry;
+                                    }
                                 } else {
-                                    SLIST_INSERT_AFTER(prev, entry, entries);
-                                    prev = entry;
+                                    free(entry);
                                 }
                             }
                         }

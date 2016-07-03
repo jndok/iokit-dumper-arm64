@@ -8,6 +8,43 @@
 
 #include "parser.h"
 
+char *read_line(FILE *fin) {
+    char *buffer;
+    char *tmp;
+    int read_chars = 0;
+    int bufsize = 512;
+    char *line = malloc(bufsize);
+    
+    if ( !line ) {
+        return NULL;
+    }
+    
+    buffer = line;
+    
+    while ( fgets(buffer, bufsize - read_chars, fin) ) {
+        read_chars = (int)strlen(line);
+        
+        if ( line[read_chars - 1] == '\n' ) {
+            line[read_chars - 1] = '\0';
+            return line;
+        }
+        
+        else {
+            bufsize = 2 * bufsize;
+            tmp = realloc(line, bufsize);
+            if ( tmp ) {
+                line = tmp;
+                buffer = line + read_chars;
+            }
+            else {
+                free(line);
+                return NULL;
+            }
+        }
+    }
+    return NULL;
+}
+
 static int32_t extract_signed_bitfield(uint32_t insn, unsigned width, unsigned offset)
 {
     unsigned shift_l = sizeof (int32_t) * 8 - (offset + width);
@@ -126,6 +163,50 @@ uint64_t find_kimage_base(struct mach_header_64 *mh)
         return seg_text->vmaddr;
     
     return 0;
+}
+
+/*
+ Credits for original identification method to morpheus (Jonathan Levin).
+ */
+const char *get_kext_name(macho_map_t *map, struct mach_header_64 *mh)
+{
+    void *p = NULL;
+    const char *z = NULL;
+    const char *kext_name = NULL;
+    
+    struct segment_command_64 *seg_data = find_segment_command64(mh, SEG_DATA);
+    if (!seg_data) {
+        return NULL;
+    }
+    
+    struct section_64 *sect_data = find_section64(seg_data, SECT_DATA);
+    if (!sect_data)
+        return NULL;
+    
+    uint32_t sect_data_off = sect_data->offset;
+    uint64_t sect_data_size = sect_data->size;
+    
+    if (sect_data_off && sect_data_size) {
+        if (((void *)mh + sect_data_off + sect_data_size) >= (map->map_data + map->map_size))
+            return NULL;
+        
+        p = memmem((const void *)((void *)mh + sect_data_off), sect_data_size, "com.apple.", 10);
+        
+        while (p) {
+            z = (const char *)p;
+            p = memmem((char *)p + 1, sect_data_size, "com.apple.", 10);
+        }
+        
+        kext_name = z;
+    } else
+        return NULL;
+    
+    if (kext_name) {
+        if (strlen(kext_name) > 128)
+            kext_name = NULL;
+    }
+    
+    return kext_name;
 }
 
 uint64_t find_kimage_os_metaclass_constructor(struct mach_header_64 *mh, uint64_t kimage_base)
