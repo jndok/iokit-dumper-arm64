@@ -18,10 +18,10 @@
  *  project.
  */
 
-#define DOT_DIGRAPH_DECLARATION_BEGIN   "digraph { fontsize=120; labelloc=t; rankdir=LR; pagedir=BL; clusterrank=local;"
+#define DOT_DIGRAPH_DECLARATION_BEGIN   "digraph { fontsize=40; label=\"%s\" labelloc=t; rankdir=LR; pagedir=BL; clusterrank=local;"
 #define DOT_DIGRAPH_DECLARATION_END     "}"
 
-#define DOT_CLASS_DECLARATION           "%s [fontsize=20; label=\"%s\"; style=filled; color=yellow; shape=\"box\"];"
+#define DOT_CLASS_DECLARATION           "%s [fontsize=15; label=\"%s\"; style=filled; color=yellow; shape=\"box\"];"
 
 #define DOT_HIERARCHY_DECLARTION        "%s -> %s"
 
@@ -127,7 +127,10 @@ int main(int argc, const char * argv[]) {
         return -3;
     }
 
-    fwrite(DOT_DIGRAPH_DECLARATION_BEGIN "\n", strlen(DOT_DIGRAPH_DECLARATION_BEGIN)+1, 1, f);
+    char dot_digraph_decl[512] = {0};
+    sprintf(dot_digraph_decl, DOT_DIGRAPH_DECLARATION_BEGIN "\n", image_name);
+
+    fwrite(dot_digraph_decl, strlen(dot_digraph_decl), 1, f);
 
     boolean_t wrote = false;
 
