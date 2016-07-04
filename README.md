@@ -32,7 +32,7 @@ Example usage to dump kernel hierarchy to Desktop:
 `libdump` is a kind-of AArch64 emulator. It is quite sloppy and relies on `capstone`. It has been written specifically for this project, but it could become a totally separated project in the future.
 
 ## Notes
-This tool has problems with new unencrypted kernelcaches, probably because of the decompression method used. It is unable to find the kernel image (at least on those I've tried), so it rebuilds the hierarchy of any KEXT but it doesn't link it to the kernel classes.
+I have added some basic support for unencrypted kernelcaches, but it has not been tested on enough cases to say it's perfect. Also the code needs a major refactor and cleanup, so keep in mind that stuff may happen.
 
 If you feel like contrinuting, do not hesitate doing so! Just submit a pull request. I would really appreciate some help.
 
@@ -57,5 +57,6 @@ Here are some generated graphs as an example:
 ## TODO
 A list of to-do for updates.
 - [ ] Code cleanup
+- [ ] Fix KEXT identification algorithm (it is buggy in some cases)
 - [x] Unencrypted kernelcaches support
 - [ ] Add graph customization and details
