@@ -161,6 +161,13 @@ uint64_t find_kimage_base(struct mach_header_64 *mh)
     struct segment_command_64 *seg_text = find_segment_command64(mh, SEG_TEXT);
     if (seg_text)
         return seg_text->vmaddr;
+    else {
+        seg_text = find_segment_command64(mh, "__TEXT_EXEC");
+        if (seg_text) {
+            return seg_text->vmaddr;
+        }
+    }
+
 
     return 0;
 }
@@ -173,6 +180,9 @@ const char *get_kext_name(macho_map_t *map, struct mach_header_64 *mh)
     void *p = NULL;
     const char *z = NULL;
     const char *kext_name = NULL;
+
+    if (mh->filetype != MH_KEXT_BUNDLE)
+        return NULL;
 
     struct segment_command_64 *seg_data = find_segment_command64(mh, SEG_DATA);
     if (!seg_data) {
@@ -193,8 +203,6 @@ const char *get_kext_name(macho_map_t *map, struct mach_header_64 *mh)
         p = memmem((const void *)((void *)mh + sect_data_off), sect_data_size, "com.apple.", 10);
 
         while (p) {
-            if (p > (void *)((void *)mh + sect_data_off + sect_data_size))
-                return NULL;
 
             z = (const char *)p;
             p = memmem((char *)p + 1, sect_data_size, "com.apple.", 10);
@@ -219,8 +227,18 @@ uint64_t find_kimage_os_metaclass_constructor(struct mach_header_64 *mh, uint64_
         return -1;
 
     struct section_64 *sect_mod_init_func = find_section64(seg_data, "__mod_init_func");
-    if (!sect_mod_init_func)
-        return -1;
+    if (!sect_mod_init_func) {
+        seg_data = find_segment_command64(mh, "__DATA_CONST");
+        if (!seg_data) {
+            return -1;
+        }
+
+        sect_mod_init_func = find_section64(seg_data, "__mod_init_func");
+        if (!sect_mod_init_func) {
+            return -1;
+        }
+    }
+
 
     uint64_t sect_mod_init_func_off = sect_mod_init_func->offset;
     uint64_t sect_mod_init_func_size = sect_mod_init_func->size;

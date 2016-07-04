@@ -27,18 +27,32 @@
 
 #include <stdio.h>
 #include <getopt.h>
+#include <mach-o/nlist.h>
 
 #include "libdump/libdump.h"
 
 void parse_mod_init_func(struct macho_map *map, struct mach_header_64 *mh, struct hierarchy_entry_head *head)
 {
+    if ((mh->filetype != MH_EXECUTE) && (mh->filetype != MH_KEXT_BUNDLE)) {
+        return;
+    }
+
     struct segment_command_64 *seg_data = find_segment_command64(mh, SEG_DATA);
     if (!seg_data)
         return;
 
     struct section_64 *sect_mod_init_func = find_section64(seg_data, "__mod_init_func");
-    if (!sect_mod_init_func)
-        return;
+    if (!sect_mod_init_func) {
+        seg_data = find_segment_command64(mh, "__DATA_CONST");
+        if (!seg_data) {
+            return;
+        }
+
+        sect_mod_init_func = find_section64(seg_data, "__mod_init_func");
+        if (!sect_mod_init_func) {
+            return;
+        }
+    }
 
     uint64_t mod_init_func_off = sect_mod_init_func->offset;
     uint64_t mod_init_func_size = sect_mod_init_func->size;
@@ -128,7 +142,7 @@ int main(int argc, const char * argv[]) {
     }
 
     char dot_digraph_decl[512] = {0};
-    sprintf(dot_digraph_decl, DOT_DIGRAPH_DECLARATION_BEGIN "\n", image_name);
+    sprintf(dot_digraph_decl, DOT_DIGRAPH_DECLARATION_BEGIN "\n", ((image_name) ? image_name : strrchr(kernelcache_path, '/')+1));
 
     fwrite(dot_digraph_decl, strlen(dot_digraph_decl), 1, f);
 

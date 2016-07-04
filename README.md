@@ -57,5 +57,5 @@ Here are some generated graphs as an example:
 ## TODO
 A list of to-do for updates.
 - [ ] Code cleanup
-- [ ] Unencrypted kernelcaches support
+- [x] Unencrypted kernelcaches support
 - [ ] Add graph customization and details
